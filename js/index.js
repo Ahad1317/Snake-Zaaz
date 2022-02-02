@@ -4,7 +4,7 @@ let pointspanelHeight;
 let playpanelWidth; 
 let playpanelHeight;
 let playpanelHorizontalMargin;
-let gameObject;
+let playscreen;
 const playpanel = document.getElementById("playpanel");
 const pointspanel = document.getElementById("pointspanel");
 const playpanelContext = playpanel.getContext("2d");
@@ -23,20 +23,14 @@ const tailColorString = "#800000"
 const borderColorString = "#FFFFFF";
 const pointsColorString = "#FF0000";
 const pointsNottakendColorString = "#FF0000";
-const delta = new Map();
-delta.set('L', [-ball, 0]);
-delta.set('R', [ball, 0]);
-delta.set('U', [0, -ball]);
-delta.set('D', [0, ball]);
+const arrea = new Map();
+arrea.set('L', [-ball, 0]);
+arrea.set('R', [ball, 0]);
+arrea.set('U', [0, -ball]);
+arrea.set('D', [0, ball]);
 
 // functions
 //display
-function displayWindowSizeError(){
-    pointspanel.style.display = "none";
-    playpanel.style.display = "none";
-    document.getElementById("home").style.display = "none";
-}
-
 function validWindowSize(windowWidth, windowHeight, ball){
     if(windowHeight < 400 || windowWidth < 1000)return false;
     pointspanelWidth = windowWidth;
@@ -50,9 +44,9 @@ function validWindowSize(windowWidth, windowHeight, ball){
     pointspanel.height = pointspanelHeight;
     playpanel.style.marginLeft = playpanelHorizontalMargin + "px";
     playpanel.style.marginRight = playpanelHorizontalMargin + "px";
-    if(gameObject !== undefined && gameObject !== null){
-        gameObject.resetGame();
-        gameObject.display();
+    if(playscreen !== undefined && playscreen !== null){
+        playscreen.resetGame();
+        playscreen.display();
     }
     return true;
 }
@@ -131,14 +125,12 @@ class SquareBlock{
     samePosition(block){return this.getMidX() === block.getMidX() && this.getMidY() === block.getMidY();}
     deepCopy(){return new SquareBlock(this.midX, this.midY, this.color);}
 }
-
-
 class Game{
     static HiScore = 0;
     static pointsGain = 100;
     static moveGain = {1: 0, 2: 5};
     static HiSCORE_KEYS = {1: "FreeHiScore"};
-    static STATUS = {"START": 1, "OVER": 2,"CHOICE": 3, "RUNNING": 4};
+    static STATUS = {"START": 1, "OVER": 2, "RUNNING": 4};
     static MODE = {"FREE": 1};
     constructor(playpanelContext, pointspanelContext) {
         this.playpanelContext = playpanelContext;
@@ -216,7 +208,7 @@ class Game{
     performMove(){
         this.loadDirection();
         let updatedPositions = this.snakeBody.map((x) => x.deepCopy());
-        let nxt = new SquareBlock(updatedPositions[0].getMidX()+delta.get(this.direction)[0], updatedPositions[0].getMidY()+delta.get(this.direction)[1], headColorString);
+        let nxt = new SquareBlock(updatedPositions[0].getMidX()+arrea.get(this.direction)[0], updatedPositions[0].getMidY()+arrea.get(this.direction)[1], headColorString);
 
         updatedPositions[0].setColor(tailColorString)
         if(this.pointstakend !== null){
@@ -282,7 +274,6 @@ class Game{
     display(){
         switch (this.status){
             case Game.STATUS.START: this.displayGameStart();return;
-            case Game.STATUS.CHOICE: this.displayChoice(); return;
             case Game.STATUS.RUNNING: this.displayGameRunning(); return;
             case Game.STATUS.OVER: this.displayGameOver(); return;
             default: console.log("Invalid Game Status")
@@ -302,16 +293,7 @@ class Game{
         this.playpanelContext.font = fontString(gameFont, false, 170);
         this.playpanelContext.fillText("SNAKE ZA❤️AZ", playpanelWidth/2, playpanelHeight/2-20);
         this.playpanelContext.font = fontString(gameFont, false, 36);
-        this.playpanelContext.fillText("HIT SPACEBAR TO CONTINUE", playpanelWidth/2, playpanelHeight/2+20);
-    }
-    displayChoice(){
-        this.clearContexts();
-        this.playpanelContext.fillStyle = "#000000";
-        this.playpanelContext.textAlign = "center";
-        this.playpanelContext.font = fontString(gameFont, false, 170);
-        this.playpanelContext.fillText("SNAKE ZA❤️AZ", playpanelWidth/2, playpanelHeight/2-30);
-        this.playpanelContext.font = fontString(gameFont, false, 36);
-        this.playpanelContext.fillText("HIT F for TO PLAY", playpanelWidth/2, playpanelHeight/2+50);
+        this.playpanelContext.fillText("HIT SPACE TO BEGIN", playpanelWidth/2, playpanelHeight/2+20);
     }
     displayGameOver(){
         let imageData = this.playpanelContext.getImageData(0, 0, playpanelWidth, playpanelHeight);
@@ -327,65 +309,46 @@ class Game{
         this.playpanelContext.fillText("THANKS FOR PLAYING ❤️", playpanelWidth/2, playpanelHeight/2+30);
     }
 }
-
-
 function initializeGame(){
     document.getElementById("home").style.display = "none";
     pointspanel.style.display = "block";
     playpanel.style.display = "block";
-
-
-    gameObject = new Game(playpanelContext, pointspanelContext);
-    gameObject.resetGame();
-    gameObject.status = Game.STATUS.START;
-    gameObject.display();
+    playscreen = new Game(playpanelContext, pointspanelContext);
+    playscreen.resetGame();
+    playscreen.status = Game.STATUS.START;
+    playscreen.display();
     document.addEventListener('keydown', (event) => {
         let keycode = event.code;
-        switch (gameObject.status){
-            case Game.STATUS.START:
-                if(keycode === "Space"){
-                    gameObject.status = Game.STATUS.CHOICE;
-                    gameObject.display();
-                }
-                break;
-            case Game.STATUS.CHOICE:
-                if(keycode === "KeyF"){
-                    gameObject.setGameMode(Game.MODE.FREE);
-
-                    gameObject.status = Game.STATUS.RUNNING;
-                    timer = setInterval(function(){
-                        if(gameObject.performMove()){
-                            gameObject.display();
-                        }else{
-                            clearInterval(timer);
-                            gameObject.updateHiScore();
-                            gameObject.status = Game.STATUS.OVER;
-                            gameObject.display();
-                            playSound(GameOverAudio);
-                        }
-                    }, timeOut);
-                }
-                break;
-            case Game.STATUS.RUNNING:
-                if(keycode.startsWith("Arrow"))
-                    gameObject.updateDirection(keycode.charAt(5));
-                break;
-            case Game.STATUS.OVER:
-                if(keycode === "Space"){
-                    gameObject.status = Game.STATUS.START;
-                    gameObject.resetGame();
-                    gameObject.display();
-                }
-                break;
-        }
-    });
-
-
+        switch (playscreen.status){
+         case Game.STATUS.START:
+        if(keycode === "Space"){
+        playscreen.setGameMode(Game.MODE.FREE);
+playscreen.status = Game.STATUS.RUNNING;
+setInterval(function(){
+if(playscreen.performMove()){
+playscreen.display();
+}else{
+playscreen.updateHiScore();
+playscreen.status = Game.STATUS.OVER;
+playscreen.display();
+playSound(GameOverAudio);
 }
-
-window.onresize = function(){window.location.reload();}
-
+}, timeOut);
+}
+break;
+case Game.STATUS.RUNNING:
+if(keycode.startsWith("Arrow"))
+playscreen.updateDirection(keycode.charAt(5));
+break;
+case Game.STATUS.OVER:
+if(keycode === "Space"){
+playscreen.status = Game.STATUS.START;
+playscreen.resetGame();
+playscreen.display();
+}
+break;
+}
+});
+}
 if(validWindowSize(windowWidth, windowHeight, ball))
     setTimeout(initializeGame, 3000);
-else
-    displayWindowSizeError();
