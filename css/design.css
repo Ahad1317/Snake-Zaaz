@@ -1,13 +1,14 @@
-body{
-    overflow: hidden;
-    background-color: rgb(17, 15, 100);
-}
 html, body {
     margin: 0;
     padding: 0;
 }
 canvas{
     display: block;
+}
+
+body{
+    overflow: hidden;
+    background-color: rgb(17, 15, 100);
 }
 #playpanel{
     background-color: #09dfdf;

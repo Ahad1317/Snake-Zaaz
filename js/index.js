@@ -14,21 +14,23 @@ const ball = 50, roundRadius = 30;
 const scoreFont = "Artifakt Element Black";
 const gameFont = "Bahnschrift SemiBold SemiConden";
 const timeOut = 200;
-const startWithBlocks = 6;
+const startWithBlocks = 7;
 const KeyPressAudio = "sound/points.mp3";
 const GameOverAudio = "sound/gameover.mp3"
-const CaptureAudio = "sound/turning.mp3";
+const takenAudio = "sound/turning.mp3";
 const headColorString = "#000000"
 const tailColorString = "#800000"
 const borderColorString = "#FFFFFF";
 const pointsColorString = "#FF0000";
-const pointsNotCapturedColorString = "#FF0000";
+const pointsNottakendColorString = "#FF0000";
 const delta = new Map();
 delta.set('L', [-ball, 0]);
 delta.set('R', [ball, 0]);
 delta.set('U', [0, -ball]);
 delta.set('D', [0, ball]);
 
+// functions
+//display
 function displayWindowSizeError(){
     pointspanel.style.display = "none";
     playpanel.style.display = "none";
@@ -37,14 +39,11 @@ function displayWindowSizeError(){
 
 function validWindowSize(windowWidth, windowHeight, ball){
     if(windowHeight < 400 || windowWidth < 1000)return false;
-
     pointspanelWidth = windowWidth;
     pointspanelHeight = Math.max(50, windowHeight/11);
-
     playpanelWidth = windowWidth - windowWidth % ball;
     playpanelHeight = (windowHeight - pointspanelHeight) - (windowHeight - pointspanelHeight) % ball;
     playpanelHorizontalMargin = (windowWidth - playpanelWidth)/2;
-
     playpanel.width = playpanelWidth;
     playpanel.height = playpanelHeight;
     pointspanel.width = pointspanelWidth;
@@ -57,9 +56,7 @@ function validWindowSize(windowWidth, windowHeight, ball){
     }
     return true;
 }
-
-
-
+// blur box
 function boxBlur(canvasImageData, blurRadius){
     let width = canvasImageData.width, height = canvasImageData.height;
     let imageData = canvasImageData.data;
@@ -74,7 +71,6 @@ function boxBlur(canvasImageData, blurRadius){
                 if(r > 0 && c > 0)val -= canvasImagePrefixSum2D[pos(r-1, c-1, layer)];
                 canvasImagePrefixSum2D.push(val);
             }
-
     let blurredImageData = [];
     for(let r = 0; r< height; r++)
         for(let c = 0; c< width; c++){
@@ -94,7 +90,7 @@ function boxBlur(canvasImageData, blurRadius){
 function blurImage(canvasImageData){
     return boxBlur(canvasImageData, 5);
 }
-
+//play panel
 CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
     if (w < 2 * r) r = w / 2;
     if (h < 2 * r) r = h / 2;
@@ -107,7 +103,7 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
     this.closePath();
     return this;
 }
-
+//sound
 function playSound(file){
     let audio = document.createElement('audio');
     audio.src = file;
@@ -138,12 +134,10 @@ class SquareBlock{
 
 
 class Game{
-    static highScore = 0;
+    static HiScore = 0;
     static pointsGain = 100;
     static moveGain = {1: 0, 2: 5};
-    static gameTimer = 10000;
-    static gameTimerIncrement = timeOut;
-    static HIGHSCORE_KEYS = {1: "FreeHighScore"};
+    static HiSCORE_KEYS = {1: "FreeHiScore"};
     static STATUS = {"START": 1, "OVER": 2,"CHOICE": 3, "RUNNING": 4};
     static MODE = {"FREE": 1};
     constructor(playpanelContext, pointspanelContext) {
@@ -153,19 +147,15 @@ class Game{
         this.mode = 0;
         this.snakeBody = [];
         this.points = null
-        this.pointsTimeRemaining = Game.gameTimer;
-        this.pointsTime = Game.gameTimer;
     }
     resetGame(){
         this.status = Game.STATUS.START;
         this.snakeBody = [];
         this.mode = 0;
         this.points = null
-        this.pointsTime = Game.gameTimer;
-        this.pointsTimeRemaining = this.pointsTime;
         this.direction = 'L';
         this.newDirection = null;
-        this.pointsCaptured = null;
+        this.pointstakend = null;
         this.score = 0;
         let x = Math.floor(playpanelWidth/(2*ball)) * ball, y = Math.floor(playpanelHeight/(2*ball))*ball
         this.snakeBody.push(new SquareBlock(x, y, headColorString));
@@ -174,20 +164,20 @@ class Game{
     }
     setGameMode(mode){
         this.mode = mode;
-        this.fetchHighScore();
+        this.fetchHiScore();
     }
     incrementScore(gain){
         this.score += gain;
     }
-    fetchHighScore(){
-        let keyName = Game.HIGHSCORE_KEYS[this.mode];
-        let highScore = localStorage.getItem(keyName);
-        if(highScore === null)Game.highScore = 0;
-        else Game.highScore = parseInt(highScore);
+    fetchHiScore(){
+        let keyName = Game.HiSCORE_KEYS[this.mode];
+        let HiScore = localStorage.getItem(keyName);
+        if(HiScore === null)Game.HiScore = 0;
+        else Game.HiScore = parseInt(HiScore);
     }
-    updateHighScore(){
-        Game.highScore = Math.max(Game.highScore, this.score);
-        localStorage.setItem(Game.HIGHSCORE_KEYS[this.mode], Game.highScore.toString());
+    updateHiScore(){
+        Game.HiScore = Math.max(Game.HiScore, this.score);
+        localStorage.setItem(Game.HiSCORE_KEYS[this.mode], Game.HiScore.toString());
     }
     generatepoints(){
         let randInt = (upto) => Math.floor(Math.random()*upto);
@@ -229,27 +219,26 @@ class Game{
         let nxt = new SquareBlock(updatedPositions[0].getMidX()+delta.get(this.direction)[0], updatedPositions[0].getMidY()+delta.get(this.direction)[1], headColorString);
 
         updatedPositions[0].setColor(tailColorString)
-        if(this.pointsCaptured !== null){
-            updatedPositions.splice(0, 1, this.pointsCaptured);
-            this.pointsCaptured = null;
+        if(this.pointstakend !== null){
+            updatedPositions.splice(0, 1, this.pointstakend);
+            this.pointstakend = null;
         }else updatedPositions.pop();
         updatedPositions.splice(0, 0, nxt);
 
         if(this.collisionHappens(updatedPositions)) {
             let copy = this.snakeBody.find((block, index) => index > 0 && block.samePosition(nxt));
-            copy.setColor(pointsNotCapturedColorString);
+            copy.setColor(pointsNottakendColorString);
             this.displayGameRunning();
             return false;
         }
 
-        this.pointsTimeRemaining -= timeOut;
         this.incrementScore(Game.moveGain[this.mode]);
         this.snakeBody = updatedPositions;
         if(this.points.samePosition(nxt)){
-            this.pointsCaptured = this.points;
+            this.pointstakend = this.points;
             this.points = null;
             this.incrementScore(Game.pointsGain);
-            playSound(CaptureAudio);
+            playSound(takenAudio);
             this.generatepoints();
         }
         return true;
@@ -278,17 +267,17 @@ class Game{
         this.pointspanelContext.textBaseline = "middle";
         this.pointspanelContext.fillStyle = "#FFFFFF";
 
-        let margin = 20, timerWidth = 0;
+        let margin = 20;
         let width = pointspanelWidth-2*margin, height = pointspanelHeight;
 
-        let currentScoreString = "Score:" + (""+this.score).padStart(6) + "                                                                               ZA❤️AZ";
-        let highScoreString = "Hi-Score:" + (""+Game.highScore).padStart(6);
+        let currentScoreString = "Score:" + (""+this.score).padStart(7) + "                                                                       SNAKE   ZA❤️AZ";
+        let HiScoreString = "Hi-Score:" + (""+Game.HiScore).padStart(7);
 
         this.pointspanelContext.font = fontString(scoreFont, true, 30);
         this.pointspanelContext.textAlign = "start";
         this.pointspanelContext.fillText(currentScoreString, margin, height/2);
         this.pointspanelContext.textAlign = "end";
-        this.pointspanelContext.fillText(highScoreString, margin+width, height/2);
+        this.pointspanelContext.fillText(HiScoreString, margin+width, height/2);
     }
     display(){
         switch (this.status){
@@ -350,7 +339,6 @@ function initializeGame(){
     gameObject.resetGame();
     gameObject.status = Game.STATUS.START;
     gameObject.display();
-    let timer = null;
     document.addEventListener('keydown', (event) => {
         let keycode = event.code;
         switch (gameObject.status){
@@ -361,8 +349,8 @@ function initializeGame(){
                 }
                 break;
             case Game.STATUS.CHOICE:
-                if(keycode === "KeyF" || keycode === "KeyT"){
-                    if(keycode === "KeyF")gameObject.setGameMode(Game.MODE.FREE);
+                if(keycode === "KeyF"){
+                    gameObject.setGameMode(Game.MODE.FREE);
 
                     gameObject.status = Game.STATUS.RUNNING;
                     timer = setInterval(function(){
@@ -370,7 +358,7 @@ function initializeGame(){
                             gameObject.display();
                         }else{
                             clearInterval(timer);
-                            gameObject.updateHighScore();
+                            gameObject.updateHiScore();
                             gameObject.status = Game.STATUS.OVER;
                             gameObject.display();
                             playSound(GameOverAudio);
