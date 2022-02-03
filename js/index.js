@@ -126,10 +126,10 @@ class SquareBlock{
     deepCopy(){return new SquareBlock(this.midX, this.midY, this.color);}
 }
 class Game{
-    static HiScore = 0;
+    static namedisplay = 0;
     static pointsGain = 100;
     static moveGain = {1: 0, 2: 5};
-    static HiSCORE_KEYS = {1: "FreeHiScore"};
+    static namedisplay_KEYS = {1: "Freenamedisplay"};
     static STATUS = {"START": 1, "OVER": 2, "RUNNING": 4};
     static MODE = {"FREE": 1};
     constructor(playpanelContext, pointspanelContext) {
@@ -156,20 +156,20 @@ class Game{
     }
     setGameMode(mode){
         this.mode = mode;
-        this.fetchHiScore();
+        this.fetchnamedisplay();
     }
     incrementScore(gain){
         this.score += gain;
     }
-    fetchHiScore(){
-        let keyName = Game.HiSCORE_KEYS[this.mode];
-        let HiScore = localStorage.getItem(keyName);
-        if(HiScore === null)Game.HiScore = 0;
-        else Game.HiScore = parseInt(HiScore);
+    fetchnamedisplay(){
+        let keyName = Game.namedisplay_KEYS[this.mode];
+        let namedisplay = localStorage.getItem(keyName);
+        if(namedisplay === null)Game.namedisplay = 0;
+        else Game.namedisplay = parseInt(namedisplay);
     }
-    updateHiScore(){
-        Game.HiScore = Math.max(Game.HiScore, this.score);
-        localStorage.setItem(Game.HiSCORE_KEYS[this.mode], Game.HiScore.toString());
+    updatenamedisplay(){
+        Game.namedisplay = Math.max(Game.namedisplay, this.score);
+        localStorage.setItem(Game.namedisplay_KEYS[this.mode], Game.namedisplay.toString());
     }
     generatepoints(){
         let randInt = (upto) => Math.floor(Math.random()*upto);
@@ -263,13 +263,13 @@ class Game{
         let width = pointspanelWidth-2*margin, height = pointspanelHeight;
 
         let currentScoreString = "Score:" + (""+this.score).padStart(7) + "                                                                       SNAKE   ZA❤️AZ";
-        let HiScoreString = "Hi-Score:" + (""+Game.HiScore).padStart(7);
+        let namedisplayString = "By - AHAD" + ("").padStart(7);
 
         this.pointspanelContext.font = fontString(scoreFont, true, 30);
         this.pointspanelContext.textAlign = "start";
         this.pointspanelContext.fillText(currentScoreString, margin, height/2);
         this.pointspanelContext.textAlign = "end";
-        this.pointspanelContext.fillText(HiScoreString, margin+width, height/2);
+        this.pointspanelContext.fillText(namedisplayString, margin+width, height/2);
     }
     display(){
         switch (this.status){
@@ -323,12 +323,13 @@ function initializeGame(){
          case Game.STATUS.START:
         if(keycode === "Space"){
         playscreen.setGameMode(Game.MODE.FREE);
+
 playscreen.status = Game.STATUS.RUNNING;
-setInterval(function(){
+ax = setInterval(function(){
 if(playscreen.performMove()){
 playscreen.display();
 }else{
-playscreen.updateHiScore();
+    clearInterval(ax);
 playscreen.status = Game.STATUS.OVER;
 playscreen.display();
 playSound(GameOverAudio);
@@ -346,9 +347,14 @@ playscreen.status = Game.STATUS.START;
 playscreen.resetGame();
 playscreen.display();
 }
-break;
+    break;
 }
 });
+
+
 }
+
+window.onresize = function(){window.location.reload();}
+
 if(validWindowSize(windowWidth, windowHeight, ball))
     setTimeout(initializeGame, 3000);
